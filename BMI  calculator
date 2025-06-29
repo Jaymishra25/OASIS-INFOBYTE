@@ -1,0 +1,95 @@
+import tkinter as tk
+from tkinter import messagebox
+import json
+import os
+
+# File to store historical BMI data
+DATA_FILE = "bmi_data.json"
+
+def calculate_bmi(weight, height):
+    """Calculate BMI and return the value and category."""
+    bmi = weight / (height ** 2)
+    if bmi < 18.5:
+        category = "Underweight"
+    elif 18.5 <= bmi < 24.9:
+        category = "Normal weight"
+    elif 25 <= bmi < 29.9:
+        category = "Overweight"
+    else:
+        category = "Obesity"
+    return round(bmi, 2), category
+
+def on_calculate():
+    """Handle the calculate button click event."""
+    try:
+        weight = float(weight_entry.get())
+        height = float(height_entry.get())
+        
+        if weight <= 0 or height <= 0:
+            raise ValueError("Weight and height must be positive numbers.")
+        
+        bmi, category = calculate_bmi(weight, height)
+        result_label.config(text=f"BMI: {bmi}, Category: {category}")
+        
+        # Save the result to historical data
+        save_bmi_data(weight, height, bmi, category)
+        
+    except ValueError as e:
+        messagebox.showerror("Input Error", str(e))
+
+def save_bmi_data(weight, height, bmi, category):
+    """Save BMI data to a JSON file."""
+    data = {
+        "weight": weight,
+        "height": height,
+        "bmi": bmi,
+        "category": category
+    }
+    
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as file:
+            historical_data = json.load(file)
+    else:
+        historical_data = []
+    
+    historical_data.append(data)
+    
+    with open(DATA_FILE, "w") as file:
+        json.dump(historical_data, file)
+
+def on_view_history():
+    """Display historical BMI data."""
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as file:
+            historical_data = json.load(file)
+        
+        history_text = "Historical BMI Data:\n"
+        for entry in historical_data:
+            history_text += f"Weight: {entry['weight']} kg, Height: {entry['height']} m, BMI: {entry['bmi']}, Category: {entry['category']}\n"
+        
+        messagebox.showinfo("BMI History", history_text)
+    else:
+        messagebox.showinfo("BMI History", "No historical data found.")
+
+# Create the main window
+root = tk.Tk()
+root.title("BMI Calculator")
+
+# Create and place the widgets
+tk.Label(root, text="Weight (kg):").grid(row=0, column=0)
+weight_entry = tk.Entry(root)
+weight_entry.grid(row=0, column=1)
+
+tk.Label(root, text="Height (m):").grid(row=1, column=0)
+height_entry = tk.Entry(root)
+height_entry.grid(row=1, column=1)
+
+tk.Button(root, text="Calculate BMI", command=on_calculate).grid(row=2, columnspan=2)
+
+result_label = tk.Label(root, text="")
+result_label.grid(row=3, columnspan=2)
+
+tk.Button(root, text="View BMI History", command=on_view_history).grid(row=4, columnspan=2)
+
+# Start the GUI event loop
+root.mainloop()
